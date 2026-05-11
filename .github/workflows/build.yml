@@ -1,0 +1,37 @@
+name: ROStudio-Build
+on: [push, workflow_dispatch]
+
+jobs:
+  android-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.5.3'
+          target: 'android'
+          arch: 'android_arm64_v8a'
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Build APK
+        run: |
+          mkdir build && cd build
+          qmake ../*.pro || cmake ..
+          make
+          make install INSTALL_ROOT=android-build
+          androiddeployqt --input android-lib*.so.deployment-settings --output android-build --deployment bundled --gradle --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ROStudio-App-File
+          path: build/android-build/build/outputs/apk/release/*.apk
+          
